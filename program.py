@@ -1,8 +1,7 @@
-import requests
 import os
 import json
+import requests
 from tqdm import tqdm
-
 
 class VkDownloader:
     def __init__(self, user_id, vk_token):
@@ -49,11 +48,22 @@ class VkDownloader:
             photos.append({'file_name': file_name, 'size': max_size_photo['type']})
         return photos
 
-
 class YaUploader:
     def __init__(self, ya_token, folder_name):
         self.ya_token = ya_token
         self.folder_name = folder_name
+
+    def create_folder(self):
+        url = f'https://cloud-api.yandex.net/v1/disk/resources'
+        headers = {'Authorization': f'OAuth {self.ya_token}'}
+        params = {'path': self.folder_name}
+        response = requests.put(url=url, headers=headers, params=params)
+        if response.status_code == 201:
+            print(f'Папка "{self.folder_name}" успешно создана на Яндекс.Диске')
+        elif response.status_code == 409:
+            print(f'Папка "{self.folder_name}" уже существует на Яндекс.Диске')
+        else:
+            print('Ошибка при создании папки:', response.text)
 
     def upload_photos(self, photos):
         url = f'https://cloud-api.yandex.net/v1/disk/resources/upload'
@@ -65,7 +75,6 @@ class YaUploader:
                 response = requests.get(url=url, headers=headers, params=params)
                 href = response.json().get('href')
                 requests.put(href, data=file)
-
 
 def main():
     user_id = input('Введите ID пользователя VK: ')
@@ -81,11 +90,11 @@ def main():
         return
 
     ya_uploader = YaUploader(ya_token, folder_name)
+    ya_uploader.create_folder()
     ya_uploader.upload_photos(photos)
 
     with open("photos.json", "w") as file:
         json.dump(photos, file, indent=4)
-
 
 if __name__ == '__main__':
     main()
